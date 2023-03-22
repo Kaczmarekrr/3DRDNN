@@ -1,7 +1,8 @@
 # own
 data
 data/
-
+*.hdf5
+*.h5
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
