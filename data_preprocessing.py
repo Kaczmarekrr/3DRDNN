@@ -103,35 +103,33 @@ def write_images_to_tfr_short(images, filename: str = "images"):
     print(f"Wrote {count} elements to TFRecord")
     return count
 
+def main():
+    batch_in_file = 2000
+    data_image = (
+        np.zeros((batch_in_file, 256, 256, 1), dtype=np.float32),
+        np.zeros((batch_in_file, 256, 256, 2), dtype=np.float32),
+    )
 
-batch_in_file = 500
-data_image = (
-    np.zeros((batch_in_file, 256, 256, 1), dtype=np.float32),
-    np.zeros((batch_in_file, 256, 256, 2), dtype=np.float32),
-)
-
-i = 0
-j = 0
-x_len = 0
-for x in train_generator:
-    if i < batch_in_file:
-        data_image[0][i, :, :, 0:1] = x[0].numpy()
-        data_image[1][i, :, :, 0:2] = x[1].numpy()
-    else:
-        count = write_images_to_tfr_short(
-            data_image, filename=r"data\\LITS_TFrecords\\images" + str(j)
-        )
-        i = 0
-        j += 1
-        data_image = (
-            np.zeros((batch_in_file, 256, 256, 1), dtype=np.float32),
-            np.zeros((batch_in_file, 256, 256, 2), dtype=np.float32),
-        )
-    i += 1
-    x_len += 1
-    if x_len > 2000:
-        break
-print("done")
+    i = 0
+    j = 0
+    x_len = 0
+    for x in train_generator:
+        if i < batch_in_file:
+            data_image[0][i, :, :, 0:1] = x[0].numpy()
+            data_image[1][i, :, :, 0:2] = x[1].numpy()
+        else:
+            count = write_images_to_tfr_short(
+                data_image, filename=r"data\\LITS_TFrecords\\images" + str(j)
+            )
+            i = 0
+            j += 1
+            data_image = (
+                np.zeros((batch_in_file, 256, 256, 1), dtype=np.float32),
+                np.zeros((batch_in_file, 256, 256, 2), dtype=np.float32),
+            )
+        i += 1
+        x_len += 1
+    print("done")
 
 
 filenames = glob.glob("data/LITS_TFRecords/*.tfrecords")
@@ -148,11 +146,18 @@ def get_dataset_large(tfr_dir: str = "/data/LITS_TFRecords/"):
     return dataset
 
 
-dataset_large = get_dataset_large()
+def print_dataset():
+    dataset_large = get_dataset_large()
 
-for sample in dataset_large.take(1):
-    print(sample[0].shape)
-    print(sample[1].shape)
+    for sample in dataset_large.take(1):
+        print(sample[0].shape)
+        print(sample[1].shape)
 
 
-print(dataset_large)
+if __name__ == "__main__":
+    #main()
+    dataset_large = get_dataset_large()
+    print(dataset_large)
+    dataset = dataset_large.repeat(101).batch(16)
+    print(dataset)
+    print_dataset()
