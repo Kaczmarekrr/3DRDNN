@@ -232,7 +232,6 @@ def build_model_3DUNET(input_layer, start_neurons):
     return output_layer
 
 
-
 def build_model_3DUNET_CH(input_layer, start_neurons):
     # 128 -> 64
     conv11 = Conv3D(start_neurons * 1, (1, 3, 3), activation="relu", padding="same")(
@@ -451,19 +450,19 @@ def build_model_3DUNET_CH(input_layer, start_neurons):
     return output_layer
 
 
-def model_call(model_name: str, pxz:int,px: int, features: int):
+def model_call(model_name: str, pxz: int, px: int, features: int):
     if model_name == "2DUNET":
         input_layer = Input((px, px, 1))
         output_layer = build_model_2DUNET(input_layer, features)
         model = Model(input_layer, output_layer)
         return model
-    
+
     elif model_name == "3DUNET":
-        input_layer = Input((pxz,px, px, 1))
+        input_layer = Input((pxz, px, px, 1))
         output_layer = build_model_3DUNET(input_layer, features)
         model = Model(input_layer, output_layer)
         return model
-    elif model_name =="3DUNET_CH":
+    elif model_name == "3DUNET_CH":
         output_layer = build_model_3DUNET_CH(input_layer, features)
         model = Model(input_layer, output_layer)
         return model
