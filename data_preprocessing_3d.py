@@ -148,7 +148,7 @@ def get_dataset_large(tfr_dir: str = "/data/LITS_TFRecords/"):
     file_list = [str(pp) for pp in glob_path.glob("**/*.tfrecords")]
     print(file_list)
     # create the dataset
-    dataset = tf.data.TFRecordDataset(file_list)
+    dataset = tf.data.TFRecordDataset(file_list,num_parallel_reads=4)
 
     # pass every single feature through our mapping function
     dataset = dataset.map(parse_tfr_element)
