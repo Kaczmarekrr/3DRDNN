@@ -1,10 +1,8 @@
-import os
 import SimpleITK as sitk
 import numpy as np
-import scipy
 import tensorflow as tf
 import glob
-
+import scipy
 
 class NiiDataLoader:
     def __init__(self, path):
@@ -20,7 +18,7 @@ class NiiDataLoader:
         t1 = np.where(t1 < min, min, t1)
         t1 = np.where(t1 > max, max, t1)
         t1 -= min
-        return t1 / max
+        return t1 / (max-min)
 
     def label_seperator_liver(self, img):
         img = np.where(img == 2, 1, img)
@@ -42,7 +40,22 @@ class NiiDataLoader:
 
     def generator_data_len(self):
         return len(self.files_volume)
+    
+    def z_transform(self,img_volume,img_seg,param_z = 700):
 
+        depth = img_volume.shape[0] / 640
+        width = img_volume.shape[1] / 512
+        height = img_volume.shape[2] / 512
+    
+        depth_factor = 1 / depth
+        width_factor = 1 / width
+        height_factor = 1 / height
+
+        resized_img_volume = scipy.ndimage.zoom(img_volume, (depth_factor,width_factor,height_factor),  order=3, prefilter=True,grid_mode=True)
+        resized_img_seg = scipy.ndimage.zoom(img_seg, (depth_factor,width_factor,height_factor), order=3, prefilter=True,grid_mode=True)
+
+        return resized_img_volume,resized_img_seg
+    
     def data_generator_2d_liver(self):
         for i, file_volume in enumerate(self.files_volume):
             img_3d_volume = self.reading_data(file_volume)
