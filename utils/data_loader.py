@@ -3,6 +3,7 @@ import numpy as np
 import tensorflow as tf
 import glob
 import scipy
+from tqdm import tqdm
 
 class NiiDataLoader:
     def __init__(self, path):
@@ -18,7 +19,7 @@ class NiiDataLoader:
         t1 = np.where(t1 < min, min, t1)
         t1 = np.where(t1 > max, max, t1)
         t1 -= min
-        return t1 / (max-min)
+        return t1 / (max - min)
 
     def label_seperator_liver(self, img):
         img = np.where(img == 2, 1, img)
@@ -40,22 +41,26 @@ class NiiDataLoader:
 
     def generator_data_len(self):
         return len(self.files_volume)
-    
-    def z_transform(self,img_volume,img_seg,param_z = 700):
 
-        depth = img_volume.shape[0] / 640
-        width = img_volume.shape[1] / 512
-        height = img_volume.shape[2] / 512
-    
-        depth_factor = 1 / depth
-        width_factor = 1 / width
-        height_factor = 1 / height
+    def z_transform(self, img_volume, img_seg, param_z=256):
+        return_img_volume = np.zeros(
+            (param_z, img_volume.shape[1], img_volume.shape[2], img_volume.shape[3])
+        )
+        return_img_seg = np.zeros(
+            (param_z, img_seg.shape[1], img_seg.shape[2], img_seg.shape[3])
+        )
+        for i in range(param_z):
 
-        resized_img_volume = scipy.ndimage.zoom(img_volume, (depth_factor,width_factor,height_factor),  order=3, prefilter=True,grid_mode=True)
-        resized_img_seg = scipy.ndimage.zoom(img_seg, (depth_factor,width_factor,height_factor), order=3, prefilter=True,grid_mode=True)
+            return_img_volume[:, i, :, 0:1] = tf.image.resize(
+                img_volume[:, i, :, 0:1], [param_z, 512], method="nearest"
+            )
+            return_img_seg[:, i, :, 0:2] = tf.image.resize(
+                img_seg[:, i, :, 0:2],
+                [param_z, 512],
+                method="nearest",
+            )
+        return return_img_volume, return_img_seg
 
-        return resized_img_volume,resized_img_seg
-    
     def data_generator_2d_liver(self):
         for i, file_volume in enumerate(self.files_volume):
             img_3d_volume = self.reading_data(file_volume)
@@ -74,7 +79,7 @@ class NiiDataLoader:
                         tf.image.resize(
                             img_3d_segmentation[j, :, :, 0:2],
                             [256, 256],
-                            method="nearest",
+                            method="bicubic",
                         ),
                     )
                 else:
@@ -137,11 +142,11 @@ class NiiDataLoader:
                         ),
                     )
 
-    def data_generator_3d_lesion_chunks(self, chunk_size=32):
+    def data_generator_3d_lesion_chunks(self, chunk_size=64):
         for i, file_volume in enumerate(self.files_volume):
+            print(f"processed files: {np.round(i/len(self.files_volume),2)}")
             img_3d_volume = self.reading_data(file_volume)
             img_3d_volume = self.preprocessing_3d(img_3d_volume)
-
             img_3d_segmentation = self.reading_data(self.files_segmenation[i])
             img_3d_segmentation_liver = self.label_seperator_liver(img_3d_segmentation)
             img_3d_segmentation_liver = tf.keras.utils.to_categorical(
@@ -155,25 +160,29 @@ class NiiDataLoader:
                 img_3d_segmentation_lesion, 2
             )
 
-            img_3d_volume = np.where(
-                img_3d_segmentation_liver[:, :, :, 1:2] == 1, img_3d_volume, 0
-            )
+            #img_3d_volume = np.where(
+            #    img_3d_segmentation_liver[:, :, :, 1:2] == 1, img_3d_volume, 0
+            #)
 
-            img_shape = img_3d_segmentation_lesion.shape
-            cords_shift = chunk_size // 2
-            for z in range((img_shape[0] // chunk_size) * 2 - 1):  # z direction
-                for y in range((img_shape[1] // chunk_size * 2) * 2 - 1):
-                    for x in range((img_shape[2] // chunk_size * 2) * 2 - 1):
+            # z transform
+            img_3d_volume, img_3d_segmentation_lesion = self.z_transform(
+                img_3d_volume, img_3d_segmentation_lesion
+            )
+            img_shape = img_3d_volume.shape
+            cords_shift = chunk_size# // 2
+            for z in range(img_shape[0] // chunk_size):  # z direction
+                for y in range(img_shape[1] // chunk_size):
+                    for x in range(img_shape[2] // chunk_size):
                         tmp_image = img_3d_volume[
                             z * cords_shift : z * cords_shift + chunk_size,
-                            y * cords_shift * 2 : y * cords_shift * 2 + chunk_size * 2,
-                            x * cords_shift * 2 : x * cords_shift * 2 + chunk_size * 2,
+                            y * cords_shift : y * cords_shift + chunk_size,
+                            x * cords_shift : x * cords_shift + chunk_size,
                             0:1,
                         ]
                         tmp_seg = img_3d_segmentation_lesion[
                             z * cords_shift : z * cords_shift + chunk_size,
-                            y * cords_shift * 2 : y * cords_shift * 2 + chunk_size * 2,
-                            x * cords_shift * 2 : x * cords_shift * 2 + chunk_size * 2,
+                            y * cords_shift : y * cords_shift + chunk_size,
+                            x * cords_shift : x * cords_shift + chunk_size,
                             0:2,
                         ]
                         if np.any(tmp_image > 0):
