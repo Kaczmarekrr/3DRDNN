@@ -54,10 +54,10 @@ def parse_tfr_element(element):
     gt = content["label"]
 
     # get our 'feature'-- our image -- and reshape it appropriately
-    image_0 = tf.io.parse_tensor(raw_image, out_type=tf.float32)
+    image_0 = tf.io.parse_tensor(raw_image, out_type=tf.float64)
     image_0 = tf.reshape(image_0, shape=[depth, height, width, channel])
 
-    image_1 = tf.io.parse_tensor(gt, out_type=tf.float32)
+    image_1 = tf.io.parse_tensor(gt, out_type=tf.float64)
     image_1 = tf.reshape(image_1, shape=[depth, height, width, channel * 2])
     return (image_0, image_1)
 
@@ -108,18 +108,18 @@ def main():
     train_generator = loader_train.data_generator_3d_lesion_chunks()
     valid_generator = loader_valid.data_generator_3d_lesion_chunks()
 
-    batch_in_file = 500
+    batch_in_file = 1_000
     data_image = (
-        np.zeros((batch_in_file, 32, 64, 64, 1), dtype=np.float32),
-        np.zeros((batch_in_file, 32, 64, 64, 2), dtype=np.float32),
+        np.zeros((batch_in_file, 64, 64, 64, 1), dtype=np.float64),
+        np.zeros((batch_in_file, 64, 64, 64, 2), dtype=np.float64),
     )
 
     i = 0
     j = 0
-    gen_list = [train_generator]#, valid_generator]
+    gen_list = [train_generator , valid_generator]
     #gen_list = [valid_generator]#
     #output_path = [r"D:\\tfrecords_valid\\images"] #[r"D:\\tfrecords_train\\images", r"D:\\tfrecords_valid\\images"]
-    output_path= ["C:\\Users\\kaczm\\programming\\3DRDNN\\data\\LITS_TFRecords\\train\\images"]#,"C:\\Users\\kaczm\\programming\\3DRDNN\\data\\LITS_TFRecords\\valid\\images"]
+    output_path= ["C:\\Users\\kaczm\\programming\\3DRDNN\\data\\LITS_TFRecords\\train\\images" ,"C:\\Users\\kaczm\\programming\\3DRDNN\\data\\LITS_TFRecords\\valid\\images"]
     for gen_id, gen in enumerate(gen_list):
         for x in gen:
             if i < batch_in_file:
@@ -136,8 +136,8 @@ def main():
                 i = 0
                 j += 1
                 data_image = (
-                    np.zeros((batch_in_file, 32, 64, 64, 1), dtype=np.float32),
-                    np.zeros((batch_in_file, 32, 64, 64, 2), dtype=np.float32),
+                    np.zeros((batch_in_file, 64, 64, 64, 1), dtype=np.float64), 
+                    np.zeros((batch_in_file, 64, 64, 64, 2), dtype=np.float64),
                 )
         print("done")
         print(count)

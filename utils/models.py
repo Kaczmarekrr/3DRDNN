@@ -450,7 +450,7 @@ def build_model_3DUNET_CH(input_layer, start_neurons):
     return output_layer
 
 
-def model_call(model_name: str, pxz: int, px: int, features: int):
+def model_call(model_name: str, px: int, features: int,pxz: 32):
     if model_name == "2DUNET":
         input_layer = Input((px, px, 1))
         output_layer = build_model_2DUNET(input_layer, features)
