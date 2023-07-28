@@ -75,19 +75,19 @@ class NiiDataLoader:
                     and np.sum(img_3d_segmentation[j, :, :, 1]) > 10
                 ):
                     yield (
-                        tf.image.resize(img_3d_volume[j, :, :, 0:1], [256, 256]),
+                        tf.image.resize(img_3d_volume[j, :, :, 0:1], [128, 128]),
                         tf.image.resize(
                             img_3d_segmentation[j, :, :, 0:2],
-                            [256, 256],
+                            [128, 128],
                             method="bicubic",
                         ),
                     )
                 else:
                     yield (
-                        tf.image.resize(img_3d_volume[j, :, :, 0:1], [256, 256]),
+                        tf.image.resize(img_3d_volume[j, :, :, 0:1], [128, 128]),
                         tf.image.resize(
                             img_3d_segmentation[j, :, :, 0:2],
-                            [256, 256],
+                            [128, 128],
                             method="nearest",
                         ),
                     )
@@ -121,11 +121,11 @@ class NiiDataLoader:
                 ):
                     yield (
                         tf.image.resize(
-                            img_3d_volume[j, :, :, 0:1], [256, 256], method="nearest"
+                            img_3d_volume[j, :, :, 0:1], [128, 128], method="nearest"
                         ),
                         tf.image.resize(
                             img_3d_segmentation_lesion[j, :, :, 0:2],
-                            [256, 256],
+                            [128, 128],
                             method="nearest",
                         ),
                     )
@@ -133,11 +133,11 @@ class NiiDataLoader:
                 if "Training_Batch_1" in self.files_volume[0]:
                     yield (
                         tf.image.resize(
-                            img_3d_volume[j, :, :, 0:1], [256, 256], method="nearest"
+                            img_3d_volume[j, :, :, 0:1], [128, 128], method="nearest"
                         ),
                         tf.image.resize(
                             img_3d_segmentation_lesion[j, :, :, 0:2],
-                            [256, 256],
+                            [128, 128],
                             method="nearest",
                         ),
                     )
