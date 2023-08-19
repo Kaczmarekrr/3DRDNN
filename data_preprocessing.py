@@ -3,7 +3,6 @@ import numpy as np
 import tensorflow as tf
 from utils import data_loader
 import glob
-
 # 1) read Nii file
 # 2) preprocess data with desire preprocessing (all data, only with liver, only with lession etc)
 # 3) save to tfrecords
@@ -104,6 +103,10 @@ def write_images_to_tfr_short(images, filename: str = "images"):
     return count
 
 def main():
+
+    no_0 = 0
+    no_1 = 0
+
     batch_in_file = 2000
     data_image = (
         np.zeros((batch_in_file, 256, 256, 1), dtype=np.float32),
@@ -113,13 +116,18 @@ def main():
     i = 0
     j = 0
     x_len = 0
+    a = 0
     for x in train_generator:
+        a+=1
         if i < batch_in_file:
             data_image[0][i, :, :, 0:1] = x[0].numpy()
             data_image[1][i, :, :, 0:2] = x[1].numpy()
+
+            no_0 += np.sum(data_image[1][i, :, :, 0])
+            no_1 += np.sum(data_image[1][i, :, :, 1])
         else:
             count = write_images_to_tfr_short(
-                data_image, filename=r"data\\LITS_TFrecords\\images" + str(j)
+                data_image, filename=r"data\\LITS_TFrecords_2D\\train\\images" + str(j)
             )
             i = 0
             j += 1
@@ -130,13 +138,15 @@ def main():
         i += 1
         x_len += 1
     print("done")
+    print(a)
+    print(no_0)
+    print(no_1)
 
 
-filenames = glob.glob("data/LITS_TFRecords/*.tfrecords")
 
-def get_dataset_large(tfr_dir: str = "/data/LITS_TFRecords/"):
-    files = glob.glob("data/LITS_TFRecords/*.tfrecords")
-
+def get_dataset_large(tfr_dir: str):
+    files = glob.glob(tfr_dir + "*.tfrecords")
+    print(files)
     # create the dataset
     dataset = tf.data.TFRecordDataset(files)
 
@@ -146,18 +156,17 @@ def get_dataset_large(tfr_dir: str = "/data/LITS_TFRecords/"):
     return dataset
 
 
-def print_dataset():
-    dataset_large = get_dataset_large()
+def print_dataset(tfr_dir):
+    dataset_large = get_dataset_large(tfr_dir)
 
     for sample in dataset_large.take(1):
         print(sample[0].shape)
         print(sample[1].shape)
 
-
 if __name__ == "__main__":
     main()
-    dataset_large = get_dataset_large()
+    dataset_large = get_dataset_large("data/LITS_TFRecords_2D/train/")
     print(dataset_large)
     dataset = dataset_large.repeat(101).batch(16)
     print(dataset)
-    print_dataset()
+    print_dataset("data/LITS_TFRecords_2D/train/")
