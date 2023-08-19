@@ -226,6 +226,7 @@ def build_model_3DUNET(input_layer, start_neurons):
     uconv1 = Conv3D(start_neurons * 2, (3, 3, 3), activation="relu", padding="same")(
         normalization7
     )
+    
 
     output_layer = Conv3D(2, (1, 1, 1), padding="same", activation="sigmoid")(uconv1)
 
