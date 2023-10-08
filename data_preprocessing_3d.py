@@ -58,7 +58,7 @@ def parse_tfr_element(element):
     image_0 = tf.reshape(image_0, shape=[depth, height, width, channel])
 
     image_1 = tf.io.parse_tensor(gt, out_type=tf.float64)
-    image_1 = tf.reshape(image_1, shape=[depth, height, width, channel * 2])
+    image_1 = tf.reshape(image_1, shape=[depth, height, width, channel])
     return (image_0, image_1)
 
 
@@ -88,7 +88,7 @@ def write_images_to_tfr_short(images, filename: str = "images"):
     for index in range(len(images[0])):
         # get the data we want to write
         current_image = images[0][index, :, :, :, 0:1]
-        current_labels = images[1][index, :, :, :, 0:2]
+        current_labels = images[1][index, :, :, :, 0:1]
         out = parse_single_image(image=current_image, label=current_labels)
         writer.write(out.SerializeToString())
         count += 1
@@ -99,49 +99,51 @@ def write_images_to_tfr_short(images, filename: str = "images"):
 
 
 def main():
-    path_train = "data\LITS_Challenge\Training_Batch_2"
-    path_valid = "data\LITS_Challenge\Training_Batch_1"
+    path_train = "data\LITS_Challenge\\valid"
+    #path_valid = "data\LITS_Challenge\Training_Batch_1"
 
     loader_train = data_loader.NiiDataLoader(path_train)
-    loader_valid = data_loader.NiiDataLoader(path_valid)
+    #loader_valid = data_loader.NiiDataLoader(path_valid)
 
     train_generator = loader_train.data_generator_3d_lesion_chunks()
-    valid_generator = loader_valid.data_generator_3d_lesion_chunks()
+    #valid_generator = loader_valid.data_generator_3d_lesion_chunks()
 
-    batch_in_file = 1_000
+    batch_in_file = 1028
     data_image = (
-        np.zeros((batch_in_file, 64, 64, 64, 1), dtype=np.float64),
-        np.zeros((batch_in_file, 64, 64, 64, 2), dtype=np.float64),
+        np.zeros((batch_in_file, 32, 32, 32, 1), dtype=np.float64),
+        np.zeros((batch_in_file, 32, 32, 32, 1), dtype=np.float64),
     )
 
     i = 0
     j = 0
-    gen_list = [train_generator , valid_generator]
+    gen_list = train_generator
     #gen_list = [valid_generator]#
     #output_path = [r"D:\\tfrecords_valid\\images"] #[r"D:\\tfrecords_train\\images", r"D:\\tfrecords_valid\\images"]
-    output_path= ["C:\\Users\\kaczm\\programming\\3DRDNN\\data\\LITS_TFRecords\\train\\images" ,"C:\\Users\\kaczm\\programming\\3DRDNN\\data\\LITS_TFRecords\\valid\\images"]
-    for gen_id, gen in enumerate(gen_list):
-        for x in gen:
-            if i < batch_in_file:
-                try:
-                    data_image[0][i, :, :, :, 0:1] = x[0]
-                    data_image[1][i, :, :, :, 0:2] = x[1]
-                    i += 1
-                except ValueError:
-                    print("wrong input shape from generator", x[0].shape, x[1].shape)
-            else:
-                count = write_images_to_tfr_short(
-                    data_image, filename=output_path[gen_id] + str(j)
-                )
-                i = 0
-                j += 1
-                data_image = (
-                    np.zeros((batch_in_file, 64, 64, 64, 1), dtype=np.float64), 
-                    np.zeros((batch_in_file, 64, 64, 64, 2), dtype=np.float64),
-                )
-        print("done")
-        print(count)
+    output_path= "C:\\Users\\kaczm\\programming\\3DRDNN\data\\LITS_Challenge\\LITS_3D_32_new_valid\\images"
+    for x in train_generator:
+        if i < batch_in_file:
+            try:
+                data_image[0][i, :, :, :, 0:1] = x[0]
+                data_image[1][i, :, :, :, 0:1] = x[1]
+                i += 1
+            except ValueError:
+                print("wrong input shape from generator", x[0].shape, x[1].shape)
+        else:
+            count = write_images_to_tfr_short(
+                data_image, filename=output_path + str(j)
+            )
+            i = 0
+            j += 1
+            data_image = (
+                np.zeros((batch_in_file, 32, 32, 32, 1), dtype=np.float64), 
+                np.zeros((batch_in_file, 32, 32, 32, 1), dtype=np.float64),
+            )
 
+    #count = write_images_to_tfr_short(
+    #    data_image, filename=output_path + str(j)
+    #    )
+    print(i)
+    print("done")
 
 def get_dataset_large(tfr_dir: str = "/data/LITS_TFRecords/"):
     glob_path = Path(tfr_dir)
@@ -163,9 +165,8 @@ def print_dataset(tfr_dir: str):
     count = 0
     for sample in dataset_large.take(-1):
         count+=1
-    print('ok')
     print(f"there are {count} examples")
 
 if __name__ == "__main__":
     main()
-    print_dataset("C:\\Users\\kaczm\\programming\\3DRDNN\\data\\LITS_TFRecords\\train")
+    print_dataset("C:\\Users\\kaczm\\programming\\3DRDNN\\data\\LITS_Challenge\\LITS_3D_32_new_valid\\")
