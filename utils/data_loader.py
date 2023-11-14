@@ -52,10 +52,9 @@ class NiiDataLoader:
         )
         for i in range(img_seg.shape[1]):
             return_img_volume[:, i, :, 0:1] = tf.image.resize(
-                img_volume[:, i, :, 0:1], [param_z, 512], method="nearest"
-            )
-            return_img_seg[:, i, :, 0:2] = tf.image.resize(
-                img_seg[:, i, :, 0:2],
+                img_volume[:, i, :, 0:1], [param_z, 512])
+            return_img_seg[:, i, :, 0:1] = tf.image.resize(
+                img_seg[:, i, :, 0:1],
                 [param_z, 512],
                 method="nearest",
             )
@@ -68,42 +67,19 @@ class NiiDataLoader:
 
             img_3d_segmentation = self.reading_data(self.files_segmenation[i])
             img_3d_segmentation = self.label_seperator_liver(img_3d_segmentation)
-            img_3d_segmentation = tf.keras.utils.to_categorical(img_3d_segmentation, 2)
+
+            img_3d_volume, img_3d_segmentation = self.z_transform(
+                img_3d_volume, img_3d_segmentation, param_z=640
+            )
             for j in range(len(img_3d_segmentation)):
-                if "Training_Batch_2" in self.files_volume[0]:
-                    if np.sum(img_3d_segmentation[j, :, :, 1]) > 10:
-                        yield (
-                            tf.image.resize(img_3d_volume[j, :, :, 0:1], [256, 256]),
-                            tf.image.resize(
-                                img_3d_segmentation[j, :, :, 0:2],
-                                [256, 256],
-                                method="nearest",
-                            ),
-                        )
-                    elif np.sum(img_3d_segmentation[j, :, :, 1]) < 10:
-                        success = np.random.uniform(0,1)
-                        if success > 0.99:
-                            yield (
-                                tf.image.resize(img_3d_volume[j, :, :, 0:1], [256, 256]),
-                                tf.image.resize(
-                                    img_3d_segmentation[j, :, :, 0:2],
-                                    [256, 256],
-                                    method="nearest",
-                                ),
-                            )
-                        else:
-                            continue
-                elif (
-                        "Training_Batch_1" in self.files_volume[0]
-                    ):
-                    yield (
-                        tf.image.resize(img_3d_volume[j, :, :, 0:1], [256, 256]),
-                        tf.image.resize(
-                            img_3d_segmentation[j, :, :, 0:2],
-                            [256, 256],
-                            method="nearest",
-                        ),
-                    )
+                yield (
+                    tf.image.resize(img_3d_volume[j, :, :, 0:1], [256, 256]),
+                    tf.image.resize(
+                        img_3d_segmentation[j, :, :, 0:1],
+                        [256, 256],
+                        method="nearest",
+                    ),
+                )
 
     def data_generator_2d_liver_classifier(self):
         for i, file_volume in enumerate(self.files_volume):
@@ -112,12 +88,13 @@ class NiiDataLoader:
 
             img_3d_segmentation = self.reading_data(self.files_segmenation[i])
             img_3d_segmentation = self.label_seperator_liver(img_3d_segmentation)
-            img_3d_segmentation = tf.keras.utils.to_categorical(img_3d_segmentation, 2)
+            # img_3d_segmentation = tf.keras.utils.to_categorical(img_3d_segmentation, 2)
+            
             for j in range(len(img_3d_segmentation)):
                 if np.sum(img_3d_segmentation[j, :, :, 1]) > 0:
-                    y_tensor = tf.constant([0,1])
+                    y_tensor = tf.constant([0, 1])
                 else:
-                    y_tensor = tf.constant([1,0])
+                    y_tensor = tf.constant([1, 0])
 
                 tf.shape(y_tensor)
                 yield (
@@ -132,48 +109,40 @@ class NiiDataLoader:
 
             img_3d_segmentation = self.reading_data(self.files_segmenation[i])
             img_3d_segmentation_liver = self.label_seperator_liver(img_3d_segmentation)
-            img_3d_segmentation_liver = tf.keras.utils.to_categorical(
-                img_3d_segmentation_liver, 2
-            )
 
             img_3d_segmentation_lesion = self.label_seperator_lesion(
                 img_3d_segmentation
             )
-            img_3d_segmentation_lesion = tf.keras.utils.to_categorical(
-                img_3d_segmentation_lesion, 2
+            print(np.unique(img_3d_segmentation_lesion),1)
+
+            img_3d_volume, img_3d_segmentation_lesion = self.z_transform(
+                img_3d_volume, img_3d_segmentation_lesion, param_z=640
+            )
+
+            img_3d_volume, img_3d_segmentation_liver = self.z_transform(
+                img_3d_volume, img_3d_segmentation_liver, param_z=640
             )
 
             img_3d_volume = np.where(
-                img_3d_segmentation_liver[:, :, :, 1:2] == 1, img_3d_volume, 0
+                img_3d_segmentation_liver == 1, img_3d_volume, 0
             )
+            print(np.unique(img_3d_segmentation_lesion),2)
+            
             for j in range(len(img_3d_segmentation_lesion)):
-                # in training
-                if (
-                    "Training_Batch_2" in self.files_volume[0]
-                    and np.sum(img_3d_segmentation_liver[j, :, :, 1]) > 10
-                ):
+
+                if np.sum(img_3d_volume[j]) > 5:
                     yield (
                         tf.image.resize(
-                            img_3d_volume[j, :, :, 0:1], [128, 128], method="nearest"
+                            img_3d_volume[j, :, :, 0:1], [256, 256]
                         ),
                         tf.image.resize(
-                            img_3d_segmentation_lesion[j, :, :, 0:2],
-                            [128, 128],
+                            img_3d_segmentation_lesion[j, :, :, 0:1],
+                            [256, 256],
                             method="nearest",
                         ),
                     )
-                # in validation
-                if "Training_Batch_1" in self.files_volume[0]:
-                    yield (
-                        tf.image.resize(
-                            img_3d_volume[j, :, :, 0:1], [128, 128], method="nearest"
-                        ),
-                        tf.image.resize(
-                            img_3d_segmentation_lesion[j, :, :, 0:2],
-                            [128, 128],
-                            method="nearest",
-                        ),
-                    )
+                else:
+                    continue
 
     def data_generator_3d_lesion_chunks(self, chunk_size=32):
         for i, file_volume in enumerate(self.files_volume):
@@ -186,26 +155,23 @@ class NiiDataLoader:
             img_3d_segmentation_lesion = self.label_seperator_lesion(
                 img_3d_segmentation
             )
-            #img_3d_segmentation_lesion = tf.keras.utils.to_categorical(
+            # img_3d_segmentation_lesion = tf.keras.utils.to_categorical(
             #    img_3d_segmentation_lesion, 2
-            #)
+            # )
 
-            #img_3d_segmentation_liver = tf.keras.utils.to_categorical(
+            # img_3d_segmentation_liver = tf.keras.utils.to_categorical(
             #    img_3d_segmentation_liver, 2
-            #)
+            # )
 
-            img_3d_volume = np.where(
-            img_3d_segmentation_liver == 1, img_3d_volume, 0
-            )
-
+            img_3d_volume = np.where(img_3d_segmentation_liver == 1, img_3d_volume, 0)
 
             # z transform
             img_3d_volume, img_3d_segmentation_lesion = self.z_transform(
-                img_3d_volume, img_3d_segmentation_lesion,param_z = 640
+                img_3d_volume, img_3d_segmentation_lesion, param_z=640
             )
             img_shape = img_3d_volume.shape
-            cords_shift = chunk_size  // 4
-            
+            cords_shift = chunk_size // 4
+
             for z in range(img_shape[0] // cords_shift):  # z direction
                 for y in range(img_shape[1] // cords_shift):
                     for x in range(img_shape[2] // cords_shift):
@@ -222,8 +188,19 @@ class NiiDataLoader:
                             0:1,
                         ]
 
-                        if np.sum(tmp_seg[4:chunk_size-4:,4:chunk_size-4,4:chunk_size-4,0]) > 1500:
+                        if (
+                            np.sum(
+                                tmp_seg[
+                                    4 : chunk_size - 4 :,
+                                    4 : chunk_size - 4,
+                                    4 : chunk_size - 4,
+                                    0,
+                                ]
+                            )
+                            > 1500
+                        ):
                             yield (tmp_image, tmp_seg)
+
 
 class NPYLoader:
     def __init__(self, path):
