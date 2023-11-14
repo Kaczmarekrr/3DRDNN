@@ -99,7 +99,7 @@ def write_images_to_tfr_short(images, filename: str = "images"):
 
 
 def main():
-    path_train = "data\LITS_Challenge\\valid"
+    path_train = "data\LITS_Challenge\\train"
     #path_valid = "data\LITS_Challenge\Training_Batch_1"
 
     loader_train = data_loader.NiiDataLoader(path_train)
@@ -119,7 +119,7 @@ def main():
     gen_list = train_generator
     #gen_list = [valid_generator]#
     #output_path = [r"D:\\tfrecords_valid\\images"] #[r"D:\\tfrecords_train\\images", r"D:\\tfrecords_valid\\images"]
-    output_path= "C:\\Users\\kaczm\\programming\\3DRDNN\data\\LITS_Challenge\\LITS_3D_32_new_valid\\images"
+    output_path= "C:\\Users\\kaczm\\programming\\3DRDNN\data\\LITS_Challenge\\LITS_3D_32_new_train\\images"
     for x in train_generator:
         if i < batch_in_file:
             try:
@@ -169,4 +169,4 @@ def print_dataset(tfr_dir: str):
 
 if __name__ == "__main__":
     main()
-    print_dataset("C:\\Users\\kaczm\\programming\\3DRDNN\\data\\LITS_Challenge\\LITS_3D_32_new_valid\\")
+    print_dataset("C:\\Users\\kaczm\\programming\\3DRDNN\\data\\LITS_Challenge\\LITS_3D_32_new_train\\")

@@ -7,15 +7,16 @@ import glob
 # 2) preprocess data with desire preprocessing (all data, only with liver, only with lession etc)
 # 3) save to tfrecords
 
-path_train = "data\LITS_Challenge\Training_Batch_2"
-path_valid = "data\LITS_Challenge\Training_Batch_1"
+path_train = "data\LITS_Challenge\\train"
+path_valid = "data\LITS_Challenge\\valid"
 
 loader_train = data_loader.NiiDataLoader(path_train)
 loader_valid = data_loader.NiiDataLoader(path_valid)
 
-train_generator = loader_train.data_generator_2d_liver()
-valid_generator = loader_valid.data_generator_2d_liver()
-
+#train_generator = loader_train.data_generator_2d_liver()
+#valid_generator = loader_valid.data_generator_2d_liver()
+train_generator = loader_train.data_generator_2d_lesion()
+valid_generator = loader_valid.data_generator_2d_lesion()
 
 def _bytes_feature(value):
     """Returns a bytes_list from a string / byte."""
@@ -63,7 +64,7 @@ def parse_tfr_element(element):
     image_0 = tf.reshape(image_0, shape=[height, width, depth])
 
     image_1 = tf.io.parse_tensor(gt, out_type=tf.float32)
-    image_1 = tf.reshape(image_1, shape=[height, width, depth*2])
+    image_1 = tf.reshape(image_1, shape=[height, width, depth])
     return (image_0, image_1)
 
 
@@ -93,7 +94,7 @@ def write_images_to_tfr_short(images, filename: str = "images"):
 
         # get the data we want to write
         current_image = images[0][index, :, :, 0:1]
-        current_labels = images[1][index, :, :, 0:2]
+        current_labels = images[1][index, :, :, 0:1]
         out = parse_single_image(image=current_image, label=current_labels)
         writer.write(out.SerializeToString())
         count += 1
@@ -107,10 +108,10 @@ def main():
     no_0 = 0
     no_1 = 0
 
-    batch_in_file = 2000
+    batch_in_file = 960
     data_image = (
         np.zeros((batch_in_file, 256, 256, 1), dtype=np.float32),
-        np.zeros((batch_in_file, 256, 256, 2), dtype=np.float32),
+        np.zeros((batch_in_file, 256, 256, 1), dtype=np.float32),
     )
 
     i = 0
@@ -121,26 +122,22 @@ def main():
         a+=1
         if i < batch_in_file:
             data_image[0][i, :, :, 0:1] = x[0].numpy()
-            data_image[1][i, :, :, 0:2] = x[1].numpy()
+            data_image[1][i, :, :, 0:1] = x[1].numpy()
 
-            no_0 += np.sum(data_image[1][i, :, :, 0])
-            no_1 += np.sum(data_image[1][i, :, :, 1])
         else:
             count = write_images_to_tfr_short(
-                data_image, filename=r"data\\LITS_TFrecords_2D\\train\\images" + str(j)
+                data_image, filename=r"data\\LITS_TFrecords_2D_Lesions\\train\\images" + str(j)
             )
             i = 0
             j += 1
             data_image = (
                 np.zeros((batch_in_file, 256, 256, 1), dtype=np.float32),
-                np.zeros((batch_in_file, 256, 256, 2), dtype=np.float32),
+                np.zeros((batch_in_file, 256, 256, 1), dtype=np.float32),
             )
         i += 1
         x_len += 1
     print("done")
     print(a)
-    print(no_0)
-    print(no_1)
 
 
 
@@ -165,8 +162,8 @@ def print_dataset(tfr_dir):
 
 if __name__ == "__main__":
     main()
-    dataset_large = get_dataset_large("data/LITS_TFRecords_2D/train/")
+    dataset_large = get_dataset_large("data/LITS_TFrecords_2D_Lesions/train/")
     print(dataset_large)
     dataset = dataset_large.repeat(101).batch(16)
     print(dataset)
-    print_dataset("data/LITS_TFRecords_2D/train/")
+    print_dataset("data/LITS_TFrecords_2D_Lesions/train/")
