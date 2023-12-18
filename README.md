@@ -1,30 +1,26 @@
 # 3DRDNN
-Project for my master in which we try to translate RECIST metric to 3D and use DNN for automatic segmentation on CT liver images 
-
+Project for my master thesis. In this project, we aim to provide DNN model for liver lesion segmentation and develop a 3D version of RECIST metric. Moreover we plan to develop export script for labels to be used in Fiji program. In this way we can show and ask radiologists to evaluate our results. As the results we plan create the new public dataset.
 
 ## Plan
 
-- Build pipeline for 3D dnn segmation
-    - data loader
-    - network architecture
-    - training
-    - results comparision
-- Test new ideas:
-    - Films as data
-    - Data scheduler
-    - Weighted loss for films and CT data 
+- [x] Train / eval / test pipeline
+- [x] comparision of Recist 2D and 3D adaptation
+- [x] export script to Fiji
+
+## Results
+
+We developed 3D U-Net based model for segmention on 3D patches. This model achieved f1 score ~67%, which is not that good. There is still space to improvment. Main problem is postprocessing. But to say - This model detects very well small changes that 2D models most likely skips.
+
+After graduation, plot, tables and others will be listed here.
 
 ## how to use it
-Run notebook pipeline
+TBA
 
 
 ## Data
 
-### Non-CT datasets: (how many films and data shape)
-- VOS (what inside?)
-- DAVIS-2017
+We used LITS challenge data as main dataset:
 
-### CT datasets: (how many scans and data shape)
-- LITS_Challenge
-- Medical Decathlon (task 3 and 8)
-- IRCAD dataset
+[LITS challenge](https://competitions.codalab.org/competitions/17094)
+
+[link to paper](https://arxiv.org/pdf/1901.04056.pdf)
